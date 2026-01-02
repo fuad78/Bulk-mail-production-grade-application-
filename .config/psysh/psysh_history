@@ -1,0 +1,1 @@
+$user = App\Models\User::where("email", "admin@example.com")->first(); $user->password = Hash::make("fuad12"); $user->save();
