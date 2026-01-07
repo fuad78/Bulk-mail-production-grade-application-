@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\AuditLog;
+use App\Models\Recipient;
 use Illuminate\Http\Request;
 
-class AuditLogController extends Controller
+class EmailLogController extends Controller
 {
     public function index()
     {
@@ -14,10 +14,10 @@ class AuditLogController extends Controller
             abort(403);
         }
 
-        $logs = AuditLog::with('user')
+        $logs = Recipient::with(['campaign', 'campaign.sender'])
             ->latest()
             ->paginate(20);
 
-        return view('admin.audit_logs.index', compact('logs'));
+        return view('admin.email_logs.index', compact('logs'));
     }
 }

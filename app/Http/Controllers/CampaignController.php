@@ -51,6 +51,51 @@ class CampaignController extends Controller
         return view('campaigns.create', compact('senders'));
     }
 
+    public function edit(Campaign $campaign)
+    {
+        if (request()->user()->isViewer())
+            abort(403);
+        if ($campaign->user_id !== auth()->id() && !auth()->user()->isAdmin()) {
+            abort(403);
+        }
+
+        // Only allow editing if draft or rejected
+        if (!in_array($campaign->status, [Campaign::STATUS_DRAFT, Campaign::STATUS_REJECTED])) {
+            return redirect()->route('campaigns.show', $campaign)->with('error', 'Only draft or rejected campaigns can be edited.');
+        }
+
+        $senders = \App\Models\Sender::all();
+        return view('campaigns.edit', compact('campaign', 'senders'));
+    }
+
+    public function updateWeb(Request $request, Campaign $campaign)
+    {
+        if ($request->user()->isViewer())
+            abort(403);
+        if ($campaign->user_id !== auth()->id() && !auth()->user()->isAdmin()) {
+            abort(403);
+        }
+
+        if (!in_array($campaign->status, [Campaign::STATUS_DRAFT, Campaign::STATUS_REJECTED])) {
+            return redirect()->route('campaigns.show', $campaign)->with('error', 'Cannot update a campaign that is not a draft or rejected.');
+        }
+
+        $validated = $request->validate([
+            'subject' => 'required|string|max:255',
+            'body' => 'required|string',
+            'sender_id' => 'nullable|exists:senders,id',
+            'scheduled_at' => 'nullable|date|after:now',
+        ]);
+
+        // If rejected, reset to draft so it can be submitted again? Or keep as specific status?
+        // Usually, fixing a rejected campaign puts it back to draft until submitted.
+        $validated['status'] = Campaign::STATUS_DRAFT;
+
+        $campaign->update($validated);
+
+        return redirect()->route('campaigns.show', $campaign)->with('success', 'Campaign updated successfully.');
+    }
+
     public function storeWeb(Request $request)
     {
         if ($request->user()->isViewer())
@@ -134,8 +179,9 @@ class CampaignController extends Controller
             $listsQuery->where('department_id', auth()->user()->department_id);
         }
         $availableLists = $listsQuery->get();
+        $senders = \App\Models\Sender::all();
 
-        return view('campaigns.show', compact('campaign', 'availableLists'));
+        return view('campaigns.show', compact('campaign', 'availableLists', 'senders'));
     }
 
     public function uploadRecipientsWeb(Request $request, Campaign $campaign)
@@ -200,6 +246,9 @@ class CampaignController extends Controller
         if ($request->user()->isViewer())
             abort(403);
         try {
+            if ($request->has('sender_id')) {
+                $campaign->update(['sender_id' => $request->sender_id]);
+            }
             $this->campaignService->approve($request->user(), $campaign);
             return redirect()->back()->with('success', 'Campaign approved and queued for sending.');
         } catch (\Exception $e) {

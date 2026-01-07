@@ -12,6 +12,8 @@ services:
     environment:
       SERVICE_NAME: app
       SERVICE_TAGS: dev
+    env_file:
+      - .env
     working_dir: /var/www
     volumes:
       - ./:/var/www
@@ -69,6 +71,8 @@ services:
     container_name: bulk-email-queue
     restart: unless-stopped
     command: php artisan queue:work redis --sleep=3 --tries=3
+    env_file:
+      - .env
     volumes:
       - ./:/var/www
     networks:

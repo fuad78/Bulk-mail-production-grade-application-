@@ -6,5 +6,10 @@ use Illuminate\Database\Eloquent\Model;
 
 class Sender extends Model
 {
-    protected $fillable = ['name', 'email'];
+    protected $fillable = ['name', 'email', 'type', 'configuration', 'is_active'];
+
+    protected $casts = [
+        'configuration' => 'array',
+        'is_active' => 'boolean',
+    ];
 }

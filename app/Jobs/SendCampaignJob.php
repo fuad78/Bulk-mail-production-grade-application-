@@ -27,7 +27,7 @@ class SendCampaignJob implements ShouldQueue
     {
         $this->campaign->update(['status' => Campaign::STATUS_SENDING]);
 
-        $batchSize = 50;
+        $batchSize = 100;
 
         // Chunk recipients and dispatch batch jobs
         Recipient::where('campaign_id', $this->campaign->id)

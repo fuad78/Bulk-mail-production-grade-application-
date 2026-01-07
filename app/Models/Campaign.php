@@ -15,6 +15,7 @@ class Campaign extends Model
         'subject',
         'body',
         'status',
+        'sender_id',
         'scheduled_at',
         'sent_at'
     ];

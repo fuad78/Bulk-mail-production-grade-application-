@@ -1,4 +1,9 @@
 <nav class="bg-white border-b border-gray-100">
+    @php
+        $todoCount = \App\Models\Campaign::where('user_id', auth()->id())
+            ->whereIn('status', [\App\Models\Campaign::STATUS_DRAFT, \App\Models\Campaign::STATUS_REJECTED, \App\Models\Campaign::STATUS_PENDING_APPROVAL])
+            ->count();
+    @endphp
     <!-- Primary Navigation Menu -->
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between h-16">
@@ -15,6 +20,19 @@
                     <x-nav-link :href="url('/dashboard')" :active="request()->is('dashboard')">
                         Dashboard
                     </x-nav-link>
+
+                    <x-nav-link :href="route('todo.index')" :active="request()->routeIs('todo.index')"
+                        class="relative group">
+                        <span class="flex items-center">
+                            To-Do
+                            @if(isset($todoCount) && $todoCount > 0)
+                                <span
+                                    class="ml-2 bg-red-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full shadow-sm">
+                                    {{ $todoCount }}
+                                </span>
+                            @endif
+                        </span>
+                    </x-nav-link>
                     <x-nav-link :href="url('/campaigns')" :active="request()->is('campaigns*')">
                         Campaigns
                     </x-nav-link>
@@ -24,6 +42,9 @@
                     @if(auth()->user()->isAdmin())
                         <x-nav-link :href="url('/admin/users')" :active="request()->is('admin/users*')">
                             Users
+                        </x-nav-link>
+                        <x-nav-link :href="route('senders.index')" :active="request()->is('admin/senders*')">
+                            Senders
                         </x-nav-link>
                     @endif
                 </div>
@@ -35,7 +56,19 @@
                     <div>
                         <button onclick="document.getElementById('user-menu').classList.toggle('hidden')"
                             class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-gray-500 bg-white hover:text-gray-700 focus:outline-none transition ease-in-out duration-150">
-                            <div>{{ Auth::user()->name }} ({{ Auth::user()->role }})</div>
+                            <div class="flex items-center">
+                                @if(Auth::user()->profile_photo_path)
+                                    <img class="h-8 w-8 rounded-full object-cover mr-2"
+                                        src="{{ asset('storage/' . Auth::user()->profile_photo_path) }}"
+                                        alt="{{ Auth::user()->name }}" />
+                                @else
+                                    <div
+                                        class="h-8 w-8 rounded-full bg-indigo-500 flex items-center justify-center text-white font-bold mr-2 text-xs">
+                                        {{ substr(Auth::user()->name, 0, 2) }}
+                                    </div>
+                                @endif
+                                <div>{{ Auth::user()->name }} ({{ Auth::user()->role }})</div>
+                            </div>
 
                             <div class="ml-1">
                                 <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg"
@@ -56,6 +89,10 @@
                             @if(auth()->user()->isAdmin())
                                 <a href="{{ route('settings.index') }}"
                                     class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Settings</a>
+                                <a href="{{ route('admin.audit-logs.index') }}"
+                                    class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Activity Log</a>
+                                <a href="{{ route('admin.email-logs.index') }}"
+                                    class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Email Delivery Log</a>
                             @endif
 
                             <a href="{{ route('profile.edit') }}"

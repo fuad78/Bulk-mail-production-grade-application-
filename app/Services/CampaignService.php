@@ -35,6 +35,10 @@ class CampaignService
             throw new \Exception("Only draft campaigns can be submitted.");
         }
 
+        if ($campaign->recipients()->count() === 0) {
+            throw new \Exception("Cannot submit a campaign with 0 recipients. Please upload a CSV or select an Address Book.");
+        }
+
         $campaign->update(['status' => Campaign::STATUS_PENDING_APPROVAL]);
         $this->log($user, 'CAMPAIGN_SUBMITTED', "Submitted campaign {$campaign->id}");
     }

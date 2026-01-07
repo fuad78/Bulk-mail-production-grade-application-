@@ -52,66 +52,85 @@ A production-ready bulk email system built with Laravel, Vue/Blade, and AWS SES.
    - Database: Port 3306
    - Redis: Port 6379
 
-## Deployment Guide: CPanel (Shared/VPS)
+## Deployment Guide: cPanel (Shared Hosting)
 
-This system is designed to run in Docker, but can be adapted for CPanel environments that support PHP 8.2+ and SSH access.
+Deploying a Laravel app on shared cPanel hosting requires specific steps since you cannot easily change the web root or run long-running processes (Supervisor).
 
 ### 1. Database Setup
-1.  Log in to CPanel > **MySQL Databases**.
-2.  Create a new database (e.g., `cpuser_bulkemail`).
-3.  Create a user and assign **ALL PRIVILEGES** to the database.
-4.  Note down the credentials.
+1.  Log in to cPanel > **MySQL Databases**.
+2.  Create a new Database (e.g., `cpuser_bulkmail`).
+3.  Create a new User and assign it to the database with **ALL PRIVILEGES**.
+4.  Save the database name, user, and password.
 
-### 2. File Upload
-1.  Zip your project files (excluding `vendor` and `node_modules`).
-2.  In CPanel **File Manager**, upload to a private folder (e.g., `/home/cpuser/bulk-email-app`).
-    *   *Do NOT put the entire app in `public_html` for security.*
-3.  Unzip the files.
+### 2. Files Upload
+1.  On your local machine, run `composer install --optimize-autoloader --no-dev`.
+2.  Zip the entire project folder (including `vendor`).
+3.  In cPanel > **File Manager**, create a folder properly outside public access: `/home/cpuser/apps/bulk-mail`.
+4.  Upload and extract your zip there.
 
-### 3. Public Folder Setup
-1.  Move the contents of the `public` folder from your app to your `public_html` (or subdomain folder).
-2.  Edit `public_html/index.php`. Change:
+### 3. Public Folder Setup (The Symlink Method)
+*Do not move files. Use a symlink to keep the architecture clean.*
+
+1.  Delete the `public` folder inside `public_html` (or create a subdomain folder).
+2.  Create a PHP script named `symlink.php` in `public_html`:
     ```php
-    require __DIR__.'/../vendor/autoload.php';
-    // to
-    require __DIR__.'/../../bulk-email-app/vendor/autoload.php';
-
-    $app = require_once __DIR__.'/../bootstrap/app.php';
-    // to
-    $app = require_once __DIR__.'/../../bulk-email-app/bootstrap/app.php';
+    <?php
+    $target = '/home/cpuser/apps/bulk-mail/public';
+    $link = '/home/cpuser/public_html'; // Or /home/cpuser/public_html/subdomain
+    symlink($target, $link);
+    echo "Symlink created.";
+    ?>
     ```
+3.  Run it by visiting `yourdomain.com/symlink.php` in your browser.
+4.  Delete `symlink.php`.
 
-### 4. Configuration
-1.  Copy `.env.example` to `.env` inside `/home/cpuser/bulk-email-app/`.
-2.  Edit `.env` (via File Manager or SSH):
+### 4. Environment Configuration
+1.  Rename `.env.example` to `.env` in `/home/cpuser/apps/bulk-mail/`.
+2.  Edit `.env`:
     - `APP_URL=https://your-domain.com`
-    - `DB_DATABASE=cpuser_bulkemail`
-    - `DB_USERNAME=...`
+    - `DB_DATABASE=cpuser_bulkmail`
+    - `DB_USERNAME=cpuser_...`
     - `DB_PASSWORD=...`
-    - `QUEUE_CONNECTION=database` (If Redis is not available on shared hosting)
+    - `QUEUE_CONNECTION=database` (**Important:** Redis is rarely available on shared hosting).
     - `AWS_ACCESS_KEY_ID=...`
     - `AWS_SECRET_ACCESS_KEY=...`
 
-### 5. Dependency Installation (SSH Required)
-Login via SSH and run:
-```bash
-cd /home/cpuser/bulk-email-app
-composer install --optimize-autoloader --no-dev
-php artisan config:cache
-php artisan migrate --force
-php artisan storage:link
-```
-*If you don't have SSH, run `composer install` locally, zip `vendor`, and upload it.*
+### 5. Finalize Installation
+1.  **Terminal/SSH** (If available in cPanel):
+    ```bash
+    cd /home/cpuser/apps/bulk-mail
+    php artisan migrate --force
+    php artisan storage:link
+    php artisan config:cache
+    php artisan route:cache
+    ```
+2.  **No SSH?** Use Routes:
+    - Create a temporary route in `web.php` to run migrations:
+      ```php
+      Route::get('/migrate', function() {
+          \Artisan::call('migrate --force');
+          return 'Migrated!';
+      });
+      ```
+    - Visit `yourdomain.com/migrate` then remove the code.
 
-### 6. Queue Worker (CRITICAL)
-For bulk emails to send, the queue must run.
-1.  **Ideally**: Use Supervisor. (Available on VPS).
-2.  **Shared Layout**: Setup a Cron Job.
-    - CPanel > **Cron Jobs**.
-    - Command: `cd /home/cpuser/bulk-email-app && php artisan schedule:run >> /dev/null 2>&1`
-    - Frequency: Every minute `* * * * *`.
-    - **Note**: You might need `php artisan queue:work --stop-when-empty` in a cron if you can't run a daemon. Better approach for shared hosting is to use `database` queue and a cron that processes the queue every minute.
+### 6. Cron Job for Emails (Required)
+Since Shared Hosting kills long-running processes, we use the Scheduler to process the queue.
 
-### 7. Recommendations
-- Use Redis if possible (many hosting providers offer it).
-- Ensure your `QUEUE_CONNECTION` matches your environment (sync for testing, redis/database for production).
+1.  Go to cPanel > **Cron Jobs**.
+2.  Add a new Cron Job (Every Minute `* * * * *`):
+    ```bash
+    /usr/local/bin/php /home/cpuser/apps/bulk-mail/artisan schedule:run >> /dev/null 2>&1
+    ```
+    *(Note: Check your host's PHP path. It might be `/usr/bin/php` or `/opt/alt/php82/usr/bin/php`)*
+
+3.  **Kernel Update**:
+    Ensure `app/Console/Kernel.php` (or `routes/console.php` in Laravel 11) has the worker command.
+    In `routes/console.php`, add:
+    ```php
+    Schedule::command('queue:work --stop-when-empty')
+        ->everyMinute()
+        ->withoutOverlapping();
+    ```
+
+This ensures that every minute, the server sends a batch of emails until the queue is empty, then stops to respect shared hosting limits.

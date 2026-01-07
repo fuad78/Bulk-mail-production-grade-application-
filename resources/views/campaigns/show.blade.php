@@ -37,6 +37,13 @@
                             </p>
                             <p class="mt-2"><strong>Department:</strong> {{ $campaign->department->name ?? 'N/A' }}</p>
                             <p class="mt-2"><strong>Recipients:</strong> {{ $campaign->recipients()->count() }}</p>
+                            <p class="mt-2"><strong>Sender:</strong> 
+                                @if($campaign->sender)
+                                    {{ $campaign->sender->name }} ({{ $campaign->sender->email }})
+                                @else
+                                    <span class="text-gray-500 italic">Default System Email</span>
+                                @endif
+                            </p>
                         </div>
                         <div>
                             <h3 class="text-lg font-bold mb-2">Content</h3>
@@ -102,8 +109,19 @@
 
                         <!-- Approval Actions (Admin Only & Pending) -->
                         @if($campaign->status === 'pending_approval' && auth()->user()->isAdmin())
-                            <form action="{{ route('campaigns.approve', $campaign) }}" method="POST">
+                            <form action="{{ route('campaigns.approve', $campaign) }}" method="POST" class="space-y-4 border p-4 rounded bg-green-50">
                                 @csrf
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Select Sender (Source Email)</label>
+                                    <select name="sender_id" class="block w-full text-sm border-gray-300 rounded-md shadow-sm focus:border-green-500 focus:ring-green-500">
+                                        <option value="">Default System Email</option>
+                                        @foreach($senders as $sender)
+                                            <option value="{{ $sender->id }}" {{ $campaign->sender_id == $sender->id ? 'selected' : '' }}>
+                                                {{ $sender->name }} ({{ $sender->email }})
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
                                 <button type="submit"
                                     class="inline-flex items-center px-4 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-700 focus:outline-none transition ease-in-out duration-150">
                                     Approve & Send
@@ -132,6 +150,54 @@
                                 </button>
                             </form>
                         @endif
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recipient Debug List (For Debugging) -->
+            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
+                <div class="p-6 text-gray-900">
+                    <h3 class="text-lg font-bold mb-4">Recipient Status</h3>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th
+                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Email</th>
+                                    <th
+                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Status</th>
+                                    <th
+                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Error Message</th>
+                                    <th
+                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Time</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                @foreach($campaign->recipients()->latest()->take(50)->get() as $recipient)
+                                    <tr>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                            {{ $recipient->email }}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                            @if($recipient->status === 'sent')
+                                                <span class="text-green-600 font-bold">Sent</span>
+                                            @elseif($recipient->status === 'failed')
+                                                <span class="text-red-600 font-bold">Failed</span>
+                                            @else
+                                                <span class="text-yellow-600">{{ ucfirst($recipient->status) }}</span>
+                                            @endif
+                                        </td>
+                                        <td class="px-6 py-4 text-sm text-red-500 font-mono text-xs">
+                                            {{ $recipient->error_message ?? '-' }}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                            {{ $recipient->updated_at->diffForHumans() }}</td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>

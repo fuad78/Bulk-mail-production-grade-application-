@@ -5,6 +5,29 @@ use App\Http\Controllers\CampaignController;
 use Illuminate\Support\Facades\Auth;
 use App\Models\User;
 
+Route::get('/debug-campaign-status', function () {
+    $campaign = \App\Models\Campaign::latest()->first();
+    if (!$campaign)
+        return 'No campaigns found.';
+
+    $stats = \App\Models\Recipient::where('campaign_id', $campaign->id)
+        ->select('status', \Illuminate\Support\Facades\DB::raw('count(*) as total'))
+        ->groupBy('status')
+        ->get();
+
+    $errors = \App\Models\Recipient::where('campaign_id', $campaign->id)
+        ->whereNotNull('error_message')
+        ->take(5)
+        ->pluck('error_message', 'email');
+
+    return [
+        'campaign' => $campaign->subject,
+        'status' => $campaign->status,
+        'stats' => $stats,
+        'errors' => $errors
+    ];
+});
+
 Route::get('/', function () {
     return view('welcome');
 });
@@ -18,14 +41,18 @@ Route::post('/logout', [App\Http\Controllers\Auth\LoginController::class, 'destr
 Route::get('/t/o/{id}', [App\Http\Controllers\TrackingController::class, 'trackOpen'])->name('tracking.open');
 Route::get('/t/c/{id}', [App\Http\Controllers\TrackingController::class, 'trackClick'])->name('tracking.click');
 
+
 Route::middleware('auth')->group(function () {
     Route::get('/dashboard', [App\Http\Controllers\DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/todo', [App\Http\Controllers\DashboardController::class, 'todo'])->name('todo.index');
 
     // UI Routes
     Route::get('/campaigns', [CampaignController::class, 'indexView'])->name('campaigns.index');
     Route::get('/campaigns/create', [CampaignController::class, 'create'])->name('campaigns.create');
     Route::post('/campaigns', [CampaignController::class, 'storeWeb'])->name('campaigns.store');
     Route::get('/campaigns/{campaign}', [CampaignController::class, 'show'])->name('campaigns.show');
+    Route::get('/campaigns/{campaign}/edit', [CampaignController::class, 'edit'])->name('campaigns.edit');
+    Route::put('/campaigns/{campaign}', [CampaignController::class, 'updateWeb'])->name('campaigns.update');
 
     // Campaign Actions (Web)
     Route::post('/campaigns/{campaign}/upload', [CampaignController::class, 'uploadRecipientsWeb'])->name('campaigns.upload');
@@ -69,8 +96,11 @@ Route::middleware('auth')->group(function () {
     Route::resource('/lists', App\Http\Controllers\ContactListController::class);
 
     // Logs & Calendar
-    Route::get('/admin/audit-logs', [App\Http\Controllers\AuditLogController::class, 'index'])->name('admin.audit.index');
-    Route::get('/admin/audit-logs/export', [App\Http\Controllers\AuditLogController::class, 'export'])->name('admin.audit.export');
+    Route::get('/admin/audit-logs', [App\Http\Controllers\AuditLogController::class, 'index'])->name('admin.audit-logs.index');
+    Route::get('/admin/audit-logs/export', [App\Http\Controllers\AuditLogController::class, 'export'])->name('admin.audit-logs.export');
+
+    Route::get('/admin/email-logs', [App\Http\Controllers\EmailLogController::class, 'index'])->name('admin.email-logs.index');
+
     Route::get('/admin/access-control', function () {
         return view('admin.access.index');
     })->name('admin.access.index');

@@ -30,7 +30,10 @@ class SenderController extends Controller
     {
         $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|email|max:255', // Ideally unique, but multiple departments might share
+            'email' => 'required|email|max:255',
+            'type' => 'required|in:smtp,ses',
+            'configuration' => 'nullable|array',
+            'is_active' => 'boolean'
         ]);
 
         \App\Models\Sender::create($request->all());
@@ -65,6 +68,9 @@ class SenderController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|max:255',
+            'type' => 'required|in:smtp,ses',
+            'configuration' => 'nullable|array',
+            'is_active' => 'boolean'
         ]);
 
         $sender->update($request->all());

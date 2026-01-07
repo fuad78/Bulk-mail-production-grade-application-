@@ -26,11 +26,24 @@ class DashboardController extends Controller
         $totalBounces = Recipient::whereNotNull('bounced_at')->count();
         $bounceRate = $totalSent > 0 ? round(($totalBounces / $totalSent) * 100, 1) : 0;
 
-        // 5. Recent Campaigns for Table
+        // 5. LIVE Queue Stats
+        $pendingEmails = Recipient::where('status', 'pending')->count();
+        $failedEmails = Recipient::where('status', 'failed')->count();
+        $totalProcessed = $totalSent + $failedEmails;
+        // Calculate a "Global Completion Rate" if there are pending items
+        $totalInPipeline = $totalProcessed + $pendingEmails;
+        $completionPercentage = $totalInPipeline > 0 ? round(($totalProcessed / $totalInPipeline) * 100, 1) : 100;
+
+        // 6. Recent Campaigns for Table
         $recentCampaigns = Campaign::with('user')
             ->withCount([
                 'recipients as sent_count' => function ($query) {
                     $query->where('status', 'sent');
+                }
+            ])
+            ->withCount([
+                'recipients as failed_count' => function ($query) {
+                    $query->where('status', 'failed');
                 }
             ])
             ->withCount([
@@ -42,7 +55,64 @@ class DashboardController extends Controller
             ->take(5)
             ->get();
 
-        // 6. Chart Data (Last 7 Days)
+        // 6. Smart To-Do List Items
+        $todoItems = [];
+
+        // Drafts
+        $drafts = Campaign::where('status', Campaign::STATUS_DRAFT)
+            ->where('user_id', auth()->id()) // Only own drafts
+            ->latest()
+            ->get();
+
+        foreach ($drafts as $draft) {
+            $todoItems[] = [
+                'type' => 'info',
+                'message' => "Finish setting up campaign: {$draft->subject}",
+                'action_url' => route('campaigns.edit', $draft),
+                'action_text' => 'Continue Editing',
+                'date' => $draft->updated_at
+            ];
+        }
+
+        // Rejected Campaigns
+        $rejected = Campaign::where('status', Campaign::STATUS_REJECTED)
+            ->where('user_id', auth()->id())
+            ->latest()
+            ->get();
+
+        foreach ($rejected as $campaign) {
+            $todoItems[] = [
+                'type' => 'error',
+                'message' => "Campaign rejected: {$campaign->subject}",
+                'action_url' => route('campaigns.edit', $campaign), // Assuming edit to fix
+                'action_text' => 'Review & Fix',
+                'date' => $campaign->updated_at
+            ];
+        }
+
+        // Pending Approval (if user is admin or approver - simplifying for now to show status)
+        // Or if user is normal user, show "Waiting for approval"
+        $pending = Campaign::where('status', Campaign::STATUS_PENDING_APPROVAL)
+            ->where('user_id', auth()->id())
+            ->latest()
+            ->get();
+
+        foreach ($pending as $campaign) {
+            $todoItems[] = [
+                'type' => 'warning',
+                'message' => "Campaign pending approval: {$campaign->subject}",
+                'action_url' => route('campaigns.show', $campaign),
+                'action_text' => 'View Status',
+                'date' => $campaign->updated_at
+            ];
+        }
+
+        // Sort by date desc
+        usort($todoItems, function ($a, $b) {
+            return $b['date'] <=> $a['date'];
+        });
+
+        // 7. Chart Data (Last 7 Days)
         $chartData = $this->getChartData();
 
         return view('dashboard', compact(
@@ -51,8 +121,72 @@ class DashboardController extends Controller
             'clickRate',
             'bounceRate',
             'recentCampaigns',
-            'chartData'
+            'chartData',
+            'todoItems',
+            'pendingEmails',
+            'failedEmails',
+            'completionPercentage'
         ));
+    }
+
+    public function todo()
+    {
+        // Reuse logic or just fetch everything cleanly
+        $todoItems = [];
+
+        // Drafts
+        $drafts = Campaign::where('status', Campaign::STATUS_DRAFT)
+            ->where('user_id', auth()->id())
+            ->latest()
+            ->get();
+
+        foreach ($drafts as $draft) {
+            $todoItems[] = [
+                'type' => 'info',
+                'message' => "Finish setting up campaign: {$draft->subject}",
+                'action_url' => route('campaigns.edit', $draft),
+                'action_text' => 'Continue Editing',
+                'date' => $draft->updated_at
+            ];
+        }
+
+        // Rejected
+        $rejected = Campaign::where('status', Campaign::STATUS_REJECTED)
+            ->where('user_id', auth()->id())
+            ->latest()
+            ->get();
+
+        foreach ($rejected as $campaign) {
+            $todoItems[] = [
+                'type' => 'error',
+                'message' => "Campaign rejected: {$campaign->subject}",
+                'action_url' => route('campaigns.edit', $campaign),
+                'action_text' => 'Review & Fix',
+                'date' => $campaign->updated_at
+            ];
+        }
+
+        // Pending
+        $pending = Campaign::where('status', Campaign::STATUS_PENDING_APPROVAL)
+            ->where('user_id', auth()->id())
+            ->latest()
+            ->get();
+
+        foreach ($pending as $campaign) {
+            $todoItems[] = [
+                'type' => 'warning',
+                'message' => "Campaign pending approval: {$campaign->subject}",
+                'action_url' => route('campaigns.show', $campaign),
+                'action_text' => 'View Status',
+                'date' => $campaign->updated_at
+            ];
+        }
+
+        usort($todoItems, function ($a, $b) {
+            return $b['date'] <=> $a['date'];
+        });
+
+        return view('todo.index', compact('todoItems'));
     }
 
     private function getChartData()
