@@ -1,0 +1,60 @@
+VM Deployment Guide (Git Workflow)
+This guide explains how to deploy your Bulk Email System to a new VM using Git for code and manual transfer for data configuration.
+
+Prerequisites
+GitHub Repo: Ensure your code is pushed to GitHub.
+New VM: Ubuntu 22.04 with Docker & Docker Compose installed.
+Quick Install: curl -fsSL https://get.docker.com | sh
+Step 1: Prepare Data (On Old Machine/Local)
+Since Git only tracks code, you must manually export your data and configuration.
+
+1. Export Database
+docker exec bulk-email-db mysqldump -u laravel -proot bulk_email > backup.sql
+2. Zip Data Files
+Use tar or zip to bundle the files that Git ignores (Storage + sensitive Config).
+
+# Create a zip containing .env and your storage (uploads)
+tar -czvf data-backup.tar.gz .env storage/app/
+Note: We include storage/app/ to keep uploaded CSVs/files. We include .env for your secrets.
+
+Step 2: Setup on New VM
+1. Clone Repository
+ssh into your new VM and clone the repo:
+
+git clone https://github.com/your-username/bulk-email-system.git
+cd bulk-email-system
+2. Upload Data
+From your local machine, upload the backup files to the VM folder:
+
+scp backup.sql user@vm-ip:/path/to/bulk-email-system/
+scp data-backup.tar.gz user@vm-ip:/path/to/bulk-email-system/
+3. Restore Configuration & Files
+On the VM:
+
+# Extract the data backup
+tar -xzvf data-backup.tar.gz
+This restores your .env file and your storage/app folder.
+
+Step 3: Start Application
+Run the containers on the VM:
+
+docker-compose up -d --build
+Post-Start Setup
+Fix Permissions:
+docker exec -it bulk-email-app chown -R www-data:www-data /var/www/storage
+docker exec -it bulk-email-app chmod -R 775 /var/www/storage
+Link Storage:
+docker exec -it bulk-email-app php artisan storage:link
+Step 4: Import Database
+Restore the database dump into the fresh container:
+
+# Wait 30s for DB to start, then:
+cat backup.sql | docker exec -i bulk-email-db mysql -u laravel -proot bulk_email
+Step 5: Verification
+Go to http://vm-ip:8080.
+Login and check your data.
+Future Updates (CI/CD style)
+When you push new code to GitHub, update the VM easily:
+
+git pull origin main
+docker-compose up -d --build app queue
