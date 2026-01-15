@@ -58,3 +58,6 @@ When you push new code to GitHub, update the VM easily:
 
 git pull origin main
 docker-compose up -d --build app queue
+
+
+-----------------------------------docker exec -i bulk-email-db mysql -u root -proot bulk_email < backup.sql

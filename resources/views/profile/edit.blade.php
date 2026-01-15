@@ -54,6 +54,7 @@
                                     " />
                             </label>
                         </div>
+                        <x-input-error :messages="$errors->get('photo')" class="mt-2" />
 
                         <!-- Name -->
                         <div>

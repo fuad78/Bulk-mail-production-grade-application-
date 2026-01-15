@@ -67,95 +67,102 @@
 
             @foreach($groups as $groupName => $badgeColor)
                 <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-                    <!-- Group Header -->
-                    <div class="bg-gray-50 border-b border-gray-100 px-6 py-3 grid grid-cols-12 gap-4 items-center">
-                        <div class="col-span-6 flex items-center">
-                            <span
-                                class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold leading-4 text-white uppercase tracking-wider {{ $badgeColor }}">
-                                {{ $groupName }}
-                            </span>
-                        </div>
-                        <div class="col-span-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">Deadline</div>
-                        <div class="col-span-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">Action Required
-                        </div>
-                        <div class="col-span-2 text-right text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                            Status</div>
-                    </div>
-
-                    <div class="divide-y divide-gray-100">
-                        @if(isset($grouped[$groupName]))
-                            @foreach($grouped[$groupName] as $campaign)
-                                <div
-                                    class="px-6 py-4 grid grid-cols-12 gap-4 items-center hover:bg-gray-50 transition-colors group">
-                                    <!-- Title Section -->
-                                    <div class="col-span-6">
-                                        <div class="flex items-center">
-                                            <a href="{{ route('campaigns.show', $campaign) }}"
-                                                class="text-sm font-medium text-gray-900 group-hover:text-indigo-600 transition-colors">
-                                                {{ $campaign->subject }}
-                                            </a>
-                                        </div>
-                                        <div class="mt-1 flex items-center text-xs text-gray-500">
-                                            <span class="truncate">{{ $campaign->department->name ?? 'General' }}</span>
-                                            <span class="mx-1">&bull;</span>
-                                            <span>Created by {{ $campaign->user->name }}</span>
-                                        </div>
-                                    </div>
-
-                                    <!-- Deadline -->
-                                    <div class="col-span-2 text-sm text-gray-600">
-                                        {{ $campaign->scheduled_at ? $campaign->scheduled_at->format('M j, Y') : '-' }}
-                                    </div>
-
-                                    <!-- Action Required -->
-                                    <div class="col-span-2 text-sm text-gray-500">
-                                        @if($campaign->status === 'draft')
-                                            <a href="{{ route('campaigns.show', $campaign) }}"
-                                                class="text-indigo-600 hover:text-indigo-800 font-medium">Configure</a>
-                                        @elseif($campaign->status === 'pending_approval')
-                                            @if(auth()->user()->isAdmin())
-                                                <span class="text-orange-600 font-medium">Review Now</span>
-                                            @else
-                                                <span class="text-gray-400">Waiting for Admin</span>
-                                            @endif
-                                        @elseif($campaign->status === 'sending')
-                                            <span class="text-green-600 flex items-center">
-                                                <span class="relative flex h-2 w-2 mr-2">
-                                                    <span
-                                                        class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                                                    <span class="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
-                                                </span>
-                                                Sending...
-                                            </span>
-                                        @else
-                                            No action
-                                        @endif
-                                    </div>
-
-                                    <!-- Status -->
-                                    <div class="col-span-2 text-right">
-                                        <span class="text-sm font-bold text-gray-700 uppercase">
-                                            {{ $campaign->status }}
-                                        </span>
-                                    </div>
+                    <div class="overflow-x-auto">
+                        <div class="min-w-[800px]">
+                            <!-- Group Header -->
+                            <div class="bg-gray-50 border-b border-gray-100 px-6 py-3 grid grid-cols-12 gap-4 items-center">
+                                <div class="col-span-6 flex items-center">
+                                    <span
+                                        class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold leading-4 text-white uppercase tracking-wider {{ $badgeColor }}">
+                                        {{ $groupName }}
+                                    </span>
                                 </div>
-                            @endforeach
-                        @else
-                            <div class="px-6 py-8 text-center text-sm text-gray-400 italic">
-                                No campaigns in this stage.
+                                <div class="col-span-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                                    Deadline</div>
+                                <div class="col-span-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">Action
+                                    Required
+                                </div>
+                                <div
+                                    class="col-span-2 text-right text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                                    Status</div>
                             </div>
-                        @endif
 
-                        <!-- Quick Add Row (Visual Only for now) -->
-                        <div class="px-6 py-3 bg-gray-50 border-t border-gray-100">
-                            <a href="{{ route('campaigns.create') }}"
-                                class="text-sm text-gray-500 hover:text-gray-700 flex items-center">
-                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                                </svg>
-                                New task
-                            </a>
+                            <div class="divide-y divide-gray-100">
+                                @if(isset($grouped[$groupName]))
+                                    @foreach($grouped[$groupName] as $campaign)
+                                        <div
+                                            class="px-6 py-4 grid grid-cols-12 gap-4 items-center hover:bg-gray-50 transition-colors group">
+                                            <!-- Title Section -->
+                                            <div class="col-span-6">
+                                                <div class="flex items-center">
+                                                    <a href="{{ route('campaigns.show', $campaign) }}"
+                                                        class="text-sm font-medium text-gray-900 group-hover:text-indigo-600 transition-colors">
+                                                        {{ $campaign->subject }}
+                                                    </a>
+                                                </div>
+                                                <div class="mt-1 flex items-center text-xs text-gray-500">
+                                                    <span class="truncate">{{ $campaign->department->name ?? 'General' }}</span>
+                                                    <span class="mx-1">&bull;</span>
+                                                    <span>Created by {{ $campaign->user->name }}</span>
+                                                </div>
+                                            </div>
+
+                                            <!-- Deadline -->
+                                            <div class="col-span-2 text-sm text-gray-600">
+                                                {{ $campaign->scheduled_at ? $campaign->scheduled_at->format('M j, Y') : '-' }}
+                                            </div>
+
+                                            <!-- Action Required -->
+                                            <div class="col-span-2 text-sm text-gray-500">
+                                                @if($campaign->status === 'draft')
+                                                    <a href="{{ route('campaigns.show', $campaign) }}"
+                                                        class="text-indigo-600 hover:text-indigo-800 font-medium">Configure</a>
+                                                @elseif($campaign->status === 'pending_approval')
+                                                    @if(auth()->user()->isAdmin())
+                                                        <span class="text-orange-600 font-medium">Review Now</span>
+                                                    @else
+                                                        <span class="text-gray-400">Waiting for Admin</span>
+                                                    @endif
+                                                @elseif($campaign->status === 'sending')
+                                                    <span class="text-green-600 flex items-center">
+                                                        <span class="relative flex h-2 w-2 mr-2">
+                                                            <span
+                                                                class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                                                            <span class="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                                                        </span>
+                                                        Sending...
+                                                    </span>
+                                                @else
+                                                    No action
+                                                @endif
+                                            </div>
+
+                                            <!-- Status -->
+                                            <div class="col-span-2 text-right">
+                                                <span class="text-sm font-bold text-gray-700 uppercase">
+                                                    {{ $campaign->status }}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    @endforeach
+                                @else
+                                    <div class="px-6 py-8 text-center text-sm text-gray-400 italic">
+                                        No campaigns in this stage.
+                                    </div>
+                                @endif
+
+                                <!-- Quick Add Row (Visual Only for now) -->
+                                <div class="px-6 py-3 bg-gray-50 border-t border-gray-100">
+                                    <a href="{{ route('campaigns.create') }}"
+                                        class="text-sm text-gray-500 hover:text-gray-700 flex items-center">
+                                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                                        </svg>
+                                        New task
+                                    </a>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

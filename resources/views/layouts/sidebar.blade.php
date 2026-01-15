@@ -1,17 +1,29 @@
-<div
-    class="flex flex-col w-64 h-screen px-0 py-0 bg-[#232f3e] border-r border-[#1a222e] fixed left-0 top-0 overflow-y-auto z-50 sidebar-scroll text-gray-300 shadow-xl">
-    <div class="h-16 flex items-center px-5 bg-[#18222d] border-b border-[#0d131a] shadow-sm">
+<!-- Mobile Sidebar Overlay -->
+<div x-show="sidebarOpen" @click="sidebarOpen = false" x-transition.opacity
+    class="fixed inset-0 bg-gray-900 bg-opacity-50 z-40 lg:hidden"></div>
+
+<!-- Sidebar -->
+<div :class="[sidebarOpen ? 'translate-x-0' : '-translate-x-full', desktopSidebarOpen ? 'lg:translate-x-0' : 'lg:-translate-x-full']"
+    class="flex flex-col w-64 h-screen px-0 py-0 bg-[#232f3e] border-r border-[#1a222e] fixed left-0 top-0 overflow-y-auto z-50 sidebar-scroll text-gray-300 shadow-xl transition-transform duration-300 ease-in-out">
+    <div class="h-16 flex items-center justify-between px-5 bg-[#18222d] border-b border-[#0d131a] shadow-sm relative">
         <div class="flex items-center gap-3">
             <div
                 class="w-8 h-8 bg-[#ec7211] rounded flex items-center justify-center text-white font-bold text-lg shadow-lg">
                 B</div>
             <div>
                 <h2 class="text-sm font-bold text-white tracking-wide uppercase leading-none">
-                    {{ \App\Models\Setting::get('app_name') ?? config('app.name', 'BulkMail') }}
+                    Bulk Mail
                 </h2>
                 <span class="text-[10px] text-gray-400 font-medium tracking-wider">ENTERPRISE</span>
             </div>
         </div>
+        <!-- Desktop Close Button -->
+        <button @click="desktopSidebarOpen = false"
+            class="hidden lg:flex text-gray-400 hover:text-white focus:outline-none ml-2">
+            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+        </button>
     </div>
 
     <div class="px-0 py-4 flex flex-col justify-between flex-1">

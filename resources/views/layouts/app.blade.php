@@ -18,20 +18,34 @@
     <script src="//unpkg.com/alpinejs" defer></script>
 </head>
 
-<body class="h-full">
+<body class="h-full bg-gray-50" x-data="{ sidebarOpen: false }">
+
+    <!-- Mobile Header -->
+    <div class="lg:hidden flex items-center justify-between bg-[#18222d] px-4 py-3 shadow-md fixed w-full top-0 z-40">
+        <div class="flex items-center gap-3">
+            <button @click="sidebarOpen = !sidebarOpen" class="text-gray-400 hover:text-white focus:outline-none">
+                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+            </button>
+            <span
+                class="text-white font-bold text-lg">{{ \App\Models\Setting::get('app_name') ?? config('app.name', 'BulkMail') }}</span>
+        </div>
+    </div>
 
     @include('layouts.sidebar')
 
-    <div class="ml-64 min-h-screen">
+    <!-- Main Content Wrapper -->
+    <div class="lg:ml-64 min-h-screen pt-16 lg:pt-0 transition-all duration-300">
         @if (isset($header))
             <header class="bg-white shadow-sm border-b border-gray-100">
-                <div class="max-w-7xl mx-auto py-6 px-8">
+                <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
                     {{ $header }}
                 </div>
             </header>
         @endif
 
-        <main class="py-8 px-8">
+        <main class="py-8 px-4 sm:px-6 lg:px-8">
             {{ $slot }}
         </main>
     </div>

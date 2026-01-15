@@ -60,78 +60,82 @@
             @foreach($groups as $groupName => $badgeColor)
                 @if(isset($grouped[$groupName]) || $groupName == 'Admin') {{-- Show Admin group always even if empty on this page --}}
                     <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-                        <!-- Group Header -->
-                        <div class="bg-gray-50 border-b border-gray-100 px-6 py-3 grid grid-cols-12 gap-4 items-center">
-                            <div class="col-span-4 flex items-center">
-                                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold leading-4 text-white uppercase tracking-wider {{ $badgeColor }}">
-                                    {{ $groupName }}s
-                                 </span>
-                            </div>
-                            <div class="col-span-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">Contact Info</div>
-                            <div class="col-span-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">Department</div>
-                            <div class="col-span-2 text-right text-xs font-semibold text-gray-400 uppercase tracking-wider">Actions</div>
-                        </div>
+                        <div class="overflow-x-auto">
+                            <div class="min-w-[800px]">
+                                <!-- Group Header -->
+                                <div class="bg-gray-50 border-b border-gray-100 px-6 py-3 grid grid-cols-12 gap-4 items-center">
+                                    <div class="col-span-4 flex items-center">
+                                         <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold leading-4 text-white uppercase tracking-wider {{ $badgeColor }}">
+                                            {{ $groupName }}s
+                                         </span>
+                                    </div>
+                                    <div class="col-span-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">Contact Info</div>
+                                    <div class="col-span-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">Department</div>
+                                    <div class="col-span-2 text-right text-xs font-semibold text-gray-400 uppercase tracking-wider">Actions</div>
+                                </div>
 
-                        <div class="divide-y divide-gray-100">
-                            @if(isset($grouped[$groupName]))
-                                @foreach($grouped[$groupName] as $user)
-                                    <div class="px-6 py-4 grid grid-cols-12 gap-4 items-center hover:bg-gray-50 transition-colors group">
-                                        <!-- Name Section -->
-                                        <div class="col-span-4">
-                                            <div class="flex items-center">
-                                                <div class="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center text-xs font-bold text-gray-600 mr-3 overflow-hidden">
-                                                    @if($user->profile_photo_path)
-                                                        <img src="{{ asset('storage/' . $user->profile_photo_path) }}" class="h-full w-full object-cover">
+                                <div class="divide-y divide-gray-100">
+                                    @if(isset($grouped[$groupName]))
+                                        @foreach($grouped[$groupName] as $user)
+                                            <div class="px-6 py-4 grid grid-cols-12 gap-4 items-center hover:bg-gray-50 transition-colors group">
+                                                <!-- Name Section -->
+                                                <div class="col-span-4">
+                                                    <div class="flex items-center">
+                                                        <div class="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center text-xs font-bold text-gray-600 mr-3 overflow-hidden">
+                                                            @if($user->profile_photo_path)
+                                                                <img src="{{ asset('storage/' . $user->profile_photo_path) }}" class="h-full w-full object-cover">
+                                                            @else
+                                                                {{ substr($user->name, 0, 2) }}
+                                                            @endif
+                                                        </div>
+                                                        <div>
+                                                            <div class="text-sm font-medium text-gray-900 group-hover:text-indigo-600 transition-colors">
+                                                                {{ $user->name }}
+                                                            </div>
+                                                            <div class="text-xs text-gray-500">
+                                                                {{ $user->designation ?? 'No designation' }}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <!-- Contact Info -->
+                                                <div class="col-span-3 text-sm text-gray-600 flex flex-col justify-center">
+                                                    <div>{{ $user->email }}</div>
+                                                    <div class="text-xs text-gray-400">{{ $user->phone ?? '' }}</div>
+                                                </div>
+
+                                                <!-- Department -->
+                                                <div class="col-span-3 text-sm text-gray-600">
+                                                    @if($user->department)
+                                                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
+                                                            {{ $user->department->name }}
+                                                        </span>
                                                     @else
-                                                        {{ substr($user->name, 0, 2) }}
+                                                        <span class="text-gray-400">-</span>
                                                     @endif
                                                 </div>
-                                                <div>
-                                                    <div class="text-sm font-medium text-gray-900 group-hover:text-indigo-600 transition-colors">
-                                                        {{ $user->name }}
-                                                    </div>
-                                                    <div class="text-xs text-gray-500">
-                                                        {{ $user->designation ?? 'No designation' }}
-                                                    </div>
+
+                                                <!-- Actions -->
+                                                <div class="col-span-2 text-right flex items-center justify-end space-x-3">
+                                                    <a href="{{ route('users.edit', $user) }}" class="text-indigo-600 hover:text-indigo-900 text-sm font-medium">Edit</a>
+                                                    @if(auth()->id() !== $user->id)
+                                                        <form action="{{ route('users.destroy', $user) }}" method="POST" class="inline-block" onsubmit="return confirm('Are you sure you want to delete this user?');">
+                                                            @csrf
+                                                            @method('DELETE')
+                                                            <button type="submit" class="text-red-600 hover:text-red-900 text-sm font-medium">Delete</button>
+                                                        </form>
+                                                    @endif
                                                 </div>
                                             </div>
+                                        @endforeach
+                                    @else
+                                        <div class="px-6 py-4 text-center text-sm text-gray-400 italic">
+                                            No users found in this role group on this page.
                                         </div>
-
-                                        <!-- Contact Info -->
-                                        <div class="col-span-3 text-sm text-gray-600 flex flex-col justify-center">
-                                            <div>{{ $user->email }}</div>
-                                            <div class="text-xs text-gray-400">{{ $user->phone ?? '' }}</div>
-                                        </div>
-
-                                        <!-- Department -->
-                                        <div class="col-span-3 text-sm text-gray-600">
-                                            @if($user->department)
-                                                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
-                                                    {{ $user->department->name }}
-                                                </span>
-                                            @else
-                                                <span class="text-gray-400">-</span>
-                                            @endif
-                                        </div>
-
-                                        <!-- Actions -->
-                                        <div class="col-span-2 text-right flex items-center justify-end space-x-3">
-                                            <a href="{{ route('users.edit', $user) }}" class="text-indigo-600 hover:text-indigo-900 text-sm font-medium">Edit</a>
-                                            @if(auth()->id() !== $user->id)
-                                                <form action="{{ route('users.destroy', $user) }}" method="POST" class="inline-block" onsubmit="return confirm('Are you sure you want to delete this user?');">
-                                                    @csrf
-                                                    @method('DELETE')
-                                                    <button type="submit" class="text-red-600 hover:text-red-900 text-sm font-medium">Delete</button>
-                                                </form>
-                                            @endif
-                                        </div>
-                                    </div>
-                                @endforeach
-                            @else
-                                <div class="px-6 py-4 text-center text-sm text-gray-400 italic">
-                                    No users found in this role group on this page.
+                                    @endif
                                 </div>
-                            @endif
+                            </div>
                         </div>
                     </div>
                 @endif

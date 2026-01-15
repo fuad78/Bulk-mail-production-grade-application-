@@ -235,7 +235,7 @@
                     <a href="{{ route('campaigns.index') }}"
                         class="text-sm text-blue-600 hover:text-blue-700 font-medium">View All</a>
                 </div>
-                <div class="flex-1 overflow-y-auto">
+                <div class="flex-1 overflow-y-auto overflow-x-auto">
                     <table class="min-w-full divide-y divide-gray-100">
                         <tbody class="divide-y divide-gray-100">
                             @forelse($recentCampaigns as $campaign)
